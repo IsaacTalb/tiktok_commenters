@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TikTok Username List</title>
+  <link rel="icon" type="image/png" href="/livecommenters.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDBFSdOFsswrNSnrA7gxsONm2mBRDBlTcA",
+        authDomain: "tiktokcommenters.firebaseapp.com",
+        projectId: "tiktokcommenters",
+        storageBucket: "tiktokcommenters.firebasestorage.app",
+        messagingSenderId: "963858750736",
+        appId: "1:963858750736:web:aaa1d45b28cdec6e799995",
+        measurementId: "G-279CK5LVK3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("usernameForm");
+    const input = document.getElementById("usernameInput");
+    const result = document.getElementById("result");
+    const searchInput = document.getElementById("searchInput");
+    const list = document.getElementById("usernameList");
+    const loadingIndicator = document.getElementById("loading");
+
+    async function fetchUsernames() {
+      const q = query(collection(db, "usernames"));
+      const snapshot = await getDocs(q);
+      let usernames = [];
+      snapshot.forEach((doc) => {
+        usernames.push(doc.data().username);
+      });
+      usernames.sort((a, b) => a.localeCompare(b));
+      list.innerHTML = "";
+      usernames.forEach((username, index) => {
+        const li = document.createElement("li");
+        li.className = "text-gray-200";
+        li.textContent = `${index + 1}. @${username}`;
+        list.appendChild(li);
+      });
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = input.value.trim();
+      if (!username) return;
+
+      loadingIndicator.style.display = "block";
+      try {
+        await addDoc(collection(db, "usernames"), {
+          username,
+          createdAt: new Date()
+        });
+        input.value = "";
+        await fetchUsernames();
+        alert("✅ Username submitted successfully!");
+      } catch (error) {
+        alert("❌ Error submitting username: " + error.message);
+      } finally {
+        loadingIndicator.style.display = "none";
+      }
+    });
+
+    searchInput.addEventListener("input", async () => {
+      const search = searchInput.value.trim();
+      if (!search) {
+        result.textContent = "";
+        return;
+      }
+      const q = query(collection(db, "usernames"), where("username", "==", search));
+      const snapshot = await getDocs(q);
+      result.textContent = snapshot.empty ? "❌ Not Found" : "✅ Found";
+    });
+
+    window.onload = fetchUsernames;
+  </script>
+</head>
+<body class="bg-gray-900 text-white font-sans min-h-screen p-4">
+  <div class="max-w-2xl mx-auto">
+    <img src="/livecommenters.png" alt="TikTok Commentors Logo" class="w-12 h-12 mx-auto mb-4" />
+    <h1 class="text-3xl font-bold mb-6 text-center">🎤 TikTok Live Commenters</h1>
+
+    <form id="usernameForm" class="flex gap-2 mb-6">
+      <input id="usernameInput" type="text" placeholder="Enter TikTok username" class="flex-1 p-2 rounded bg-gray-800 text-white placeholder-gray-400" required />
+      <button type="submit" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">Submit</button>
+    </form>
+
+    <div id="loading" class="mb-4 text-blue-400 hidden">Submitting...</div>
+
+    <div class="mb-6">
+      <input id="searchInput" type="text" placeholder="Search username" class="w-full p-2 rounded bg-gray-800 text-white placeholder-gray-400" />
+      <p id="result" class="mt-2 text-sm text-green-400"></p>
+    </div>
+
+    <h2 class="text-xl font-semibold mb-2">Username List (A-Z)</h2>
+    <ul id="usernameList" class="space-y-1"></ul>
+  </div>
+</body>
+</html>
+
